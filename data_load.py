@@ -1,9 +1,13 @@
 import os
+from tkinter import N
 import pandas as pd
 
 def get_pulses_df(pulses_folder: str, file_amount: int=0) -> pd.DataFrame:
     """
     Returns a dataframe with all pulses data
+
+    :param pulses_folder: The folder containing the pulses csv files
+    :param file_amount: The number of files to load (0 for all)
     """
     
     # Get all pulses csv files

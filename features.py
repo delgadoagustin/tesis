@@ -18,11 +18,11 @@ def amplitude_max(signal):
 
 def width(signal, threshold=0.5):
     """
-    Calcula el ancho del pulso a un cierto umbral desde el máximo hacia los costados.
+    Calculate the pulse width at a certain threshold from the maximum towards the sides.
 
-    :param signal: Array de la señal.
-    :param threshold: Umbral como fracción del máximo (ej: 0.5 para 50%).
-    :return: Ancho en número de muestras.
+    :param signal: Array of the signal.
+    :param threshold: Threshold as a fraction of the maximum (e.g., 0.5 for 50%).
+    :return: Width in number of samples.
     """
     max_idx = np.argmax(signal)
     max_value = signal[max_idx]
@@ -104,12 +104,13 @@ def area_under_curve(signal, threshold=0.5):
 
 def ascendent_slope(signal, threshold=0.1):
     """
-    Calcula la pendiente media de la parte ascendente del pulso,
-    desde el cruce del umbral hasta el máximo.
+    Calculate the average slope of the ascending part of the pulse,
+    from the threshold crossing to the maximum.
+    
 
-    :param signal: Array de la señal.
-    :param threshold: Umbral como fracción del máximo (ej: 0.1 para 10%).
-    :return: Pendiente media de la subida.
+    :param signal: Array of the signal.
+    :param threshold: Threshold as a fraction of the maximum (e.g., 0.1 for 10%).
+    :return: Average slope of the rise.
     """
     max_idx = np.argmax(signal)
     max_value = signal[max_idx]
@@ -128,12 +129,12 @@ def ascendent_slope(signal, threshold=0.1):
 
 def descendent_slope(signal, threshold=0.1):
     """
-    Calcula la pendiente media de la parte descendente del pulso,
-    desde el máximo hasta el cruce del umbral.
+    Calculate the average slope of the descending part of the pulse,
+    from the maximum to the threshold crossing.
 
-    :param signal: Array de la señal.
-    :param threshold: Umbral como fracción del máximo (ej: 0.1 para 10%).
-    :return: Pendiente media de la bajada.
+    :param signal: Array of the signal.
+    :param threshold: Threshold as a fraction of the maximum (e.g., 0.1 for 10%).
+    :return: Average slope of the fall.
     """
     max_idx = np.argmax(signal)
     max_value = signal[max_idx]
@@ -152,16 +153,16 @@ def descendent_slope(signal, threshold=0.1):
 
 def pulse_symmetry(signal, threshold=0.5):
     """
-    Analiza la simetría/asimetría del pulso comparando la subida y bajada alrededor del máximo.
+    Analyze the symmetry/asymmetry of the pulse by comparing the rise and fall around the maximum.
 
-    1. Encuentra el cruce del umbral (por defecto 50%) en la subida.
-    2. Calcula la distancia desde ese punto al máximo.
-    3. Extrae el segmento simétrico en la bajada.
-    4. Calcula el error cuadrático medio (MSE) entre ambos segmentos.
+    1. Find the threshold crossing (default 50%) on the rise.
+    2. Calculate the distance from that point to the maximum.
+    3. Extract the symmetric segment on the fall.
+    4. Calculate the mean squared error (MSE) between both segments.
 
-    :param signal: Array de la señal.
-    :param threshold: Umbral como fracción del máximo (ej: 0.5 para 50%).
-    :return: mse, segmento_subida, segmento_bajada
+    :param signal: Array of the signal.
+    :param threshold: Threshold as a fraction of the maximum (e.g., 0.5 for 50%).
+    :return: mse, segment_rise, segment_fall
     """
     max_idx = np.argmax(signal)
     max_value = signal[max_idx]
@@ -362,3 +363,60 @@ def interpolated_bandwidth(signal, x):
 
 #     idx = np.argmax(spectrum)
 #     return freqs[idx]
+
+def calculate_all_features(signal, x=None, thresholds=None):
+    """
+    Calculate all pulse features using the provided signal.
+    
+    :param signal: Array of the signal.
+    :param x: Array of x values (same length as signal). If None, uses indices.
+    :param thresholds: Dict with custom thresholds. If None, uses defaults.
+    :return: Dictionary with all calculated features.
+    """
+    if thresholds is None:
+        thresholds = {
+            'width_threshold': 0.5,
+            'fall_threshold': 0.1,
+            'rise_threshold': 0.1,
+            'area_threshold': 0.5,
+            'slope_threshold': 0.1,
+            'symmetry_threshold': 0.5,
+            'curvature_threshold': 0.5,
+            'kurtosis_threshold': 0.5,
+            'com_threshold': 0.5,
+            'energy_threshold': 0.5
+        }
+    
+    features = {}
+    
+    # Basic features
+    features['amplitude_max'] = amplitude_max(signal)
+    features['width'] = width(signal, thresholds['width_threshold'])
+    features['fall_time'] = fall_time(signal, thresholds['fall_threshold'])
+    features['rise_time'] = rise_time(signal, thresholds['rise_threshold'])
+    features['area_under_curve'] = area_under_curve(signal, thresholds['area_threshold'])
+    
+    # Slope features
+    features['ascendent_slope'] = ascendent_slope(signal, thresholds['slope_threshold'])
+    features['descendent_slope'] = descendent_slope(signal, thresholds['slope_threshold'])
+    
+    # Symmetry (returns MSE only, not segments)
+    mse, _, _ = pulse_symmetry(signal, thresholds['symmetry_threshold'])
+    features['pulse_symmetry_mse'] = mse
+    
+    # Curvature (returns value only, not index)
+    curv, _ = max_curvature(signal, thresholds['curvature_threshold'])
+    features['max_curvature'] = curv
+    
+    # Statistical features
+    features['pulse_kurtosis'] = pulse_kurtosis(signal, thresholds['kurtosis_threshold'])
+    features['pulse_center_of_mass'] = pulse_center_of_mass(signal, x, thresholds['com_threshold'])
+    features['energy_above_threshold'] = energy_above_threshold(signal, x, thresholds['energy_threshold'])
+    
+    # Frequency features (only if x is provided)
+    if x is not None:
+        features['interpolated_bandwidth'] = interpolated_bandwidth(signal, x)
+    else:
+        features['interpolated_bandwidth'] = np.nan
+    
+    return features
