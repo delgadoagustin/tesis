@@ -1,16 +1,19 @@
-from dotenv import load_dotenv
-import os
-from data_load import get_pulses_df
-from features import calculate_all_features
+import pandas as pd
 
-# Load environment variables from .env file
-load_dotenv()
+## import generated features
 
-df = get_pulses_df(os.getenv("pulses_csv_path"),1)
+features = pd.read_csv('features_output_1.csv.gz', compression='gzip')
+labels = pd.read_csv('data/40mhz/original_labels/brc-2002_086400-01-output_true_labels.csv.gz', compression='gzip')
 
-for index, row in df.iterrows():
-    calculate_all_features(row)
-    print(f"Processed row {index}")
+## implement kmeans clustering
+from sklearn.cluster import KMeans
+kmeans = KMeans(n_clusters=6, random_state=42)
+kmeans.fit(features)
+clusters = kmeans.labels_
+features['cluster'] = clusters
 
-    
+## compare clusters with true labels
+from sklearn.metrics import adjusted_rand_score
+ari = adjusted_rand_score(labels['class'], features['cluster'])
+print(f'Adjusted Rand Index between KMeans clusters and true labels: {ari}')
 

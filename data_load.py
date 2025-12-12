@@ -1,5 +1,4 @@
 import os
-from tkinter import N
 import pandas as pd
 
 def get_pulses_df(pulses_folder: str, file_amount: int=0) -> pd.DataFrame:
